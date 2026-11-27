@@ -1,78 +1,75 @@
 "use client";
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebaseConfig";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { ADMIN_EMAIL, auth, terjemahkanError } from "@/lib/firebaseConfig";
+import AuthShell, { Pemuat, Pesan } from "@/components/ui/AuthShell";
+import Field from "@/components/ui/Field";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [galat, setGalat] = useState<string | null>(null);
+  const [memuat, setMemuat] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const masuk = async (e: React.FormEvent) => {
     e.preventDefault();
+    setGalat(null);
+    setMemuat(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-
-      // Cek apakah email adalah email admin
-      if (user.email === "adminsuaradesa123@gmail.com") {
-        router.push("/admin"); // Arahkan ke halaman admin jika email cocok
-      } else {
-        // Logout jika bukan email admin
-        alert("Akses ditolak: Anda bukan admin");
-        await auth.signOut();
+      const { user } = await signInWithEmailAndPassword(auth, email, password);
+      if (user.email === ADMIN_EMAIL) {
+        router.push("/admin");
+        return;
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        alert("Login admin gagal: " + error.message);
-      } else {
-        alert("Login admin gagal: Terjadi error yang tidak diketahui");
-      }
+      await signOut(auth);
+      setGalat("Akun ini bukan akun pengelola. Warga bisa masuk lewat halaman masuk biasa.");
+    } catch (err) {
+      setGalat(terjemahkanError(err));
     }
+    setMemuat(false);
   };
 
   return (
-    <div className="w-full h-screen bg-bglogin bg-cover bg-center">
-      <div className="h-full w-full py-[125px] px-8 flex md:items-end items-center justify-center bg-black/80">
-        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-3xl font-bold mb-6 text-center text-[#8b2f31]">
-            Admin Login
-          </h2>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <input
-                type="email"
-                placeholder="Admin Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full text-black p-3 border border-[#8b2f31] rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b2f31]"
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full text-black p-3 border border-[#8b2f31] rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b2f31]"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-[#8b2f31] text-white hover:text-black py-3 rounded-md font-semibold hover:bg-[#f9d747] transition duration-300"
-            >
-              Login as Admin
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+    <AuthShell
+      foto="/assets/image/BgKritik.jpg"
+      alt="Warga bermusyawarah di pendopo"
+      kutipan={
+        <>
+          Setiap tulisan yang masuk adalah suara yang menunggu <em className="text-padi">dibaca.</em>
+        </>
+      }
+      judul="Ruang pengelola"
+      pengantar="Khusus pengelola Suara Desa untuk membaca kritik dan saran warga."
+    >
+      <form onSubmit={masuk} className="space-y-8">
+        <Field label="Email pengelola" type="email" value={email} onChange={setEmail} autoComplete="email" />
+        <Field
+          label="Kata sandi"
+          type="password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+        />
+        {galat && <Pesan jenis="galat">{galat}</Pesan>}
+        <button type="submit" disabled={memuat} className="btn-hutan w-full disabled:opacity-70">
+          {memuat ? (
+            <>
+              Memeriksa <Pemuat />
+            </>
+          ) : (
+            "Masuk sebagai pengelola"
+          )}
+        </button>
+      </form>
+      <p className="mt-8 text-[15px] text-lumut">
+        Bukan pengelola?{" "}
+        <Link href="/Login" className="link-line font-semibold text-bata">
+          Masuk sebagai warga
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

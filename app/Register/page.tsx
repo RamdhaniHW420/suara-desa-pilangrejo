@@ -1,95 +1,85 @@
 "use client";
 import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebaseConfig";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, terjemahkanError } from "@/lib/firebaseConfig";
+import AuthShell, { Pemuat, Pesan } from "@/components/ui/AuthShell";
+import Field from "@/components/ui/Field";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
+  const [konfirmasi, setKonfirmasi] = useState("");
+  const [galat, setGalat] = useState<string | null>(null);
+  const [memuat, setMemuat] = useState(false);
   const router = useRouter();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const daftar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Password dan konfirmasi password tidak cocok.");
+    setGalat(null);
+    if (password !== konfirmasi) {
+      setGalat("Kata sandi dan konfirmasinya belum sama.");
       return;
     }
-
+    setMemuat(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      alert("Registrasi berhasil!");
-      router.push("/Login"); // Redirect ke halaman login setelah registrasi berhasil
-    } catch (error) {
-      if (error instanceof Error) {
-        setError("Registrasi gagal: " + error.message);
-      } else {
-        setError("Registrasi gagal: Terjadi error yang tidak diketahui");
-      }
+      router.push("/Kritik&Saran");
+    } catch (err) {
+      setGalat(terjemahkanError(err));
+      setMemuat(false);
     }
   };
 
   return (
-    <div className="w-full h-screen mt-10 bg-bgregister bg-cover bg-center">
-      <div className="h-full w-full py-[125px] px-8 flex md:items-end items-center justify-center bg-black/80">
-        <div className="w-full  max-w-md bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-3xl font-bold mb-6 text-center text-[#8b2f31]">
-            Register
-          </h2>
-          {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div>
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full text-black p-3 border border-[#8b2f31] rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b2f31]"
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full text-black p-3 border border-[#8b2f31] rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b2f31]"
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full text-black p-3 border border-[#8b2f31] rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b2f31]"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-[#8b2f31] text-white hover:text-black py-3 rounded-md font-semibold hover:bg-[#f9d747] transition duration-300"
-            >
-              Register
-            </button>
-          </form>
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-500">
-              Sudah punya akun?{" "}
-              <a href="/Login" className="text-blue-500 hover:underline">
-                Login di sini
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AuthShell
+      foto="/assets/image/BgRegister.jpeg"
+      alt="Warga bergotong royong memangkas dahan pohon"
+      kutipan={
+        <>
+          Kerja bakti dimulai dari satu orang yang <em className="text-padi">mengajak.</em>
+        </>
+      }
+      judul="Buat akun warga"
+      pengantar="Cukup email dan kata sandi. Setelah terdaftar, kamu langsung diarahkan ke formulir kritik dan saran."
+    >
+      <form onSubmit={daftar} className="space-y-8">
+        <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
+        <Field
+          label="Kata sandi"
+          type="password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          minLength={6}
+          petunjuk="Minimal 6 karakter."
+        />
+        <Field
+          label="Ulangi kata sandi"
+          type="password"
+          value={konfirmasi}
+          onChange={setKonfirmasi}
+          autoComplete="new-password"
+          minLength={6}
+        />
+        {galat && <Pesan jenis="galat">{galat}</Pesan>}
+        <button type="submit" disabled={memuat} className="btn-hutan w-full disabled:opacity-70">
+          {memuat ? (
+            <>
+              Membuat akun <Pemuat />
+            </>
+          ) : (
+            "Daftar"
+          )}
+        </button>
+      </form>
+      <p className="mt-8 text-[15px] text-lumut">
+        Sudah punya akun?{" "}
+        <Link href="/Login" className="link-line font-semibold text-bata">
+          Masuk di sini
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

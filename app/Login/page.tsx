@@ -1,74 +1,76 @@
 "use client";
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebaseConfig";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth, terjemahkanError } from "@/lib/firebaseConfig";
+import AuthShell, { Pemuat, Pesan } from "@/components/ui/AuthShell";
+import Field from "@/components/ui/Field";
 
-export default function LoginGuest() {
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [galat, setGalat] = useState<string | null>(null);
+  const [memuat, setMemuat] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const masuk = async (e: React.FormEvent) => {
     e.preventDefault();
+    setGalat(null);
+    setMemuat(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/Kritik&Saran");
-    } catch (error) {
-      if (error instanceof Error) {
-        alert("Login gagal: " + error.message);
-      } else {
-        alert("Login gagal: Terjadi error yang tidak diketahui");
-      }
+    } catch (err) {
+      setGalat(terjemahkanError(err));
+      setMemuat(false);
     }
   };
 
   return (
-    <div className="w-full h-screen bg-bglogin bg-cover bg-center">
-      <div className="h-full w-full py-[125px] px-8 flex md:items-end items-center justify-center bg-black/80">
-        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-3xl font-bold mb-6 text-center text-[#8b2f31]">
-            Login
-          </h2>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full text-black p-3 border border-[#8b2f31] rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b2f31]"
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 text-black border border-[#8b2f31] rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b2f31]"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-[#8b2f31] text-white hover:text-black py-3 rounded-md font-semibold hover:bg-[#f9d747] transition duration-300"
-            >
-              Login
-            </button>
-          </form>
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-500">
-              Belum punya akun?{" "}
-              <a href="/Register" className="text-blue-500 hover:underline">
-                Daftar di sini
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AuthShell
+      foto="/assets/image/BgLogin.jpeg"
+      alt="Pawai warga membawa bendera merah putih"
+      kutipan={
+        <>
+          Kembali lagi. Ada cerita apa dari <em className="text-padi">dusunmu</em> hari ini?
+        </>
+      }
+      judul="Masuk ke akun warga"
+      pengantar="Masuk untuk menulis kritik dan saran bagi Desa Pilangrejo."
+    >
+      <form onSubmit={masuk} className="space-y-8" noValidate={false}>
+        <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
+        <Field
+          label="Kata sandi"
+          type="password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+        />
+        {galat && <Pesan jenis="galat">{galat}</Pesan>}
+        <button type="submit" disabled={memuat} className="btn-hutan w-full disabled:opacity-70">
+          {memuat ? (
+            <>
+              Memeriksa akun <Pemuat />
+            </>
+          ) : (
+            "Masuk"
+          )}
+        </button>
+      </form>
+      <p className="mt-8 text-[15px] text-lumut">
+        Belum punya akun?{" "}
+        <Link href="/Register" className="link-line font-semibold text-bata">
+          Daftar sebagai warga
+        </Link>
+      </p>
+      <p className="mt-3 text-[15px] text-lumut">
+        Pengelola desa?{" "}
+        <Link href="/admin-login" className="link-line font-semibold text-bata">
+          Masuk sebagai admin
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
